@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type Task struct {
@@ -15,9 +17,6 @@ type Task struct {
 type Health struct {
 	Status string `json:"status"`
 }
-type ErrorJson struct {
-	Error string `json:"error"`
-}
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -27,45 +26,35 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	//TODO check Health
 
 	encoder := json.NewEncoder(w)
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		errAPI := ErrorJson{"method not allowed"}
-		if err := encoder.Encode(errAPI); err != nil {
-			log.Println("encoding error:", err)
-		}
-		return
-	}
 	if err := encoder.Encode(currentHealth); err != nil {
 		log.Println("encoding server health:", err)
 	}
 }
 
-func TasksHandler(w http.ResponseWriter, r *http.Request) {
+func GetTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//TODO implement POST
-
 	encoder := json.NewEncoder(w)
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		errAPI := ErrorJson{"method not allowed"}
-		if err := encoder.Encode(errAPI); err != nil {
-			log.Println("encoding error:", err)
-		}
-		return
-	}
 	tasks := make([]Task, 0)
-
 	if err := encoder.Encode(tasks); err != nil {
 		log.Println("encoding tasks:", err)
 	}
 }
 
+func PostTasks(w http.ResponseWriter, r *http.Request) {
+	//TODO
+}
+
 func main() {
-	http.HandleFunc("/health", HealthHandler)
-	http.HandleFunc("/tasks", TasksHandler)
+	r := chi.NewRouter()
+
+	r.Get("/health", HealthHandler)
+	r.Route("/tasks", func(r chi.Router) {
+		r.Get("/", GetTasks)
+		r.Post("/", PostTasks)
+	})
 
 	port := ":8080"
-	err := http.ListenAndServe(port, nil)
+	err := http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalln(err)
 	}
