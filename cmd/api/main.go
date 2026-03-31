@@ -1,59 +1,45 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/MrBorisT/task-tracker-api/handlers"
+	"github.com/MrBorisT/task-tracker-api/models"
 )
-
-type Task struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Done bool   `json:"done"`
-}
-
-type Health struct {
-	Status string `json:"status"`
-}
-
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	currentHealth := Health{
-		Status: "ok",
-	}
-	//TODO check Health
-
-	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(currentHealth); err != nil {
-		log.Println("encoding server health:", err)
-	}
-}
-
-func GetTasks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	encoder := json.NewEncoder(w)
-	tasks := make([]Task, 0)
-	if err := encoder.Encode(tasks); err != nil {
-		log.Println("encoding tasks:", err)
-	}
-}
-
-func PostTasks(w http.ResponseWriter, r *http.Request) {
-	//TODO
-}
 
 func main() {
 	r := chi.NewRouter()
+	app := handlers.App{
+		Tasks: []models.Task{
+			{
+				ID:   0,
+				Name: "Wake up",
+				Done: false,
+			},
+			{
+				ID:   1,
+				Name: "Grab a brush",
+				Done: false,
+			},
+			{
+				ID:   2,
+				Name: "Put a little make up",
+				Done: false,
+			},
+		},
+	}
 
-	r.Get("/health", HealthHandler)
+	r.Get("/health", app.HealthHandler)
 	r.Route("/tasks", func(r chi.Router) {
-		r.Get("/", GetTasks)
-		r.Post("/", PostTasks)
+		r.Get("/", app.GetTasksHandler)
+		r.Post("/", app.CreateTaskHandler)
 	})
 
 	port := ":8080"
+	log.Println("started server on port", port)
 	err := http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalln(err)
