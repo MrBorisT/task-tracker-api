@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/MrBorisT/task-tracker-api/models"
 )
 
@@ -76,6 +78,6 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (t *App) generateID() int {
-	return len(t.Tasks)
+func (t *App) generateID() uint32 {
+	return uuid.New().ID()
 }

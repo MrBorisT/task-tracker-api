@@ -1,7 +1,7 @@
 package models
 
 type Task struct {
-	ID   int    `json:"id"`
+	ID   uint32 `json:"id"`
 	Name string `json:"name"`
 	Done bool   `json:"done"`
 }
