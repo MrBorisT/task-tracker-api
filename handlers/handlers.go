@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/MrBorisT/task-tracker-api/models"
 )
@@ -46,7 +47,8 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if taskRequest.Name == "" {
+	trimmedName := strings.TrimSpace(taskRequest.Name)
+	if trimmedName == "" {
 
 		//todo return json error
 		http.Error(w, "task name is required", http.StatusBadRequest)
@@ -54,7 +56,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newTask := models.Task{
-		Name: taskRequest.Name,
+		Name: trimmedName,
 		ID:   t.generateID(),
 		Done: false,
 	}
