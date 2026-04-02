@@ -15,15 +15,15 @@ func main() {
 	app := handlers.App{
 		Tasks: []models.Task{
 			{
-				ID:   1,
+				ID:   "11111111-1111-1111-1111-111111111111",
 				Name: "Wake up",
 			},
 			{
-				ID:   2,
+				ID:   "22222222-2222-2222-2222-222222222222",
 				Name: "Grab a brush",
 			},
 			{
-				ID:   3,
+				ID:   "33333333-3333-3333-3333-333333333333",
 				Name: "Put a little make up",
 			},
 		},
