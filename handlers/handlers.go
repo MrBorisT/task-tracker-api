@@ -43,6 +43,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&taskRequest); err != nil {
 		log.Println("decoding task:", err)
 
+		w.WriteHeader(http.StatusBadRequest)
 		if err := encoder.Encode(ErrorResponse{Error: "invalid request body"}); err != nil {
 			log.Println("encoding error response:", err)
 		}
@@ -51,7 +52,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	trimmedName := strings.TrimSpace(taskRequest.Name)
 	if trimmedName == "" {
-
+		w.WriteHeader(http.StatusBadRequest)
 		if err := encoder.Encode(ErrorResponse{Error: "task name cannot be empty"}); err != nil {
 			log.Println("encoding error response:", err)
 		}
