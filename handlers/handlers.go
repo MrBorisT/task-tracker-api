@@ -44,7 +44,6 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusCreated)
 
 	if err := decoder.Decode(&taskRequest); err != nil {
 		log.Println("decoding task:", err)
@@ -73,6 +72,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t.Tasks = append(t.Tasks, newTask)
+	w.WriteHeader(http.StatusCreated)
 
 	if err := encoder.Encode(newTask); err != nil {
 		log.Println("post new task:", err)
