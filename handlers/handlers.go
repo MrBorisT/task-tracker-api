@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/MrBorisT/task-tracker-api/models"
@@ -37,6 +38,40 @@ func (t *App) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	encoder := json.NewEncoder(w)
+
+	taskID := chi.URLParam(r, "taskID")
+
+	taskID = strings.TrimSpace(taskID)
+	taskIDUint, err := uuid.Parse(taskID)
+	if err != nil {
+		log.Println("parsing task ID:", err)
+		if err = writeJSONError(w, http.StatusBadRequest, "parsing task ID failed"); err != nil {
+			log.Println("encoding error response:", err)
+		}
+		return
+	}
+
+	for _, task := range t.Tasks {
+		if task.ID == taskIDUint.ID() {
+			log.Println(task.ID, taskIDUint.ID())
+			if err := encoder.Encode(task); err != nil {
+				log.Println("encoding task:", err)
+				if err = writeJSONError(w, http.StatusBadRequest, "failed to encode task"); err != nil {
+					log.Println("encoding error response:", err)
+				}
+			}
+			return
+		}
+	}
+
+	if err := writeJSONError(w, http.StatusNotFound, "task not found"); err != nil {
+		log.Println("encoding error response:", err)
+	}
+}
+
 func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskRequest := models.CreateTaskRequest{}
 
@@ -65,7 +100,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	newTask := models.Task{
 		Name: trimmedName,
-		ID:   t.generateID(),
+		ID:   generateID(),
 		Done: false,
 	}
 
@@ -77,6 +112,6 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (t *App) generateID() uint32 {
+func generateID() uint32 {
 	return uuid.New().ID()
 }

@@ -15,19 +15,16 @@ func main() {
 	app := handlers.App{
 		Tasks: []models.Task{
 			{
-				ID:   0,
-				Name: "Wake up",
-				Done: false,
-			},
-			{
 				ID:   1,
-				Name: "Grab a brush",
-				Done: false,
+				Name: "Wake up",
 			},
 			{
 				ID:   2,
+				Name: "Grab a brush",
+			},
+			{
+				ID:   3,
 				Name: "Put a little make up",
-				Done: false,
 			},
 		},
 	}
@@ -35,6 +32,7 @@ func main() {
 	r.Get("/health", app.HealthHandler)
 	r.Route("/tasks", func(r chi.Router) {
 		r.Get("/", app.GetTasksHandler)
+		r.Get("/{taskID}", app.GetTaskHandler)
 		r.Post("/", app.CreateTaskHandler)
 	})
 
