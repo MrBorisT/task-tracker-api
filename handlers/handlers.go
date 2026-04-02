@@ -39,19 +39,23 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskRequest := models.CreateTaskRequest{}
 
 	decoder := json.NewDecoder(r.Body)
+	encoder := json.NewEncoder(w)
 	if err := decoder.Decode(&taskRequest); err != nil {
 		log.Println("decoding task:", err)
 
-		//todo return json error
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		if err := encoder.Encode(ErrorResponse{Error: "invalid request body"}); err != nil {
+			log.Println("encoding error response:", err)
+		}
 		return
 	}
 
 	trimmedName := strings.TrimSpace(taskRequest.Name)
 	if trimmedName == "" {
 
-		//todo return json error
-		http.Error(w, "task name is required", http.StatusBadRequest)
+		if err := encoder.Encode(ErrorResponse{Error: "task name cannot be empty"}); err != nil {
+			log.Println("encoding error response:", err)
+		}
+
 		return
 	}
 
@@ -65,7 +69,6 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
-	encoder := json.NewEncoder(w)
 
 	if err := encoder.Encode(newTask); err != nil {
 		log.Println("post new task:", err)
