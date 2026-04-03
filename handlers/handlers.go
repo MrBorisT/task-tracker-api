@@ -49,7 +49,7 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
 	t.mu.Lock()
-	t.mu.Unlock()
+	defer t.mu.Unlock()
 	_, err := uuid.Parse(taskID)
 	if err != nil {
 		log.Println("parsing task id", err)
