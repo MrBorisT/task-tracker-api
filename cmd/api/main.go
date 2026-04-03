@@ -33,6 +33,7 @@ func main() {
 	r.Route("/tasks", func(r chi.Router) {
 		r.Get("/", app.GetTasksHandler)
 		r.Get("/{taskID}", app.GetTaskHandler)
+		r.Delete("/{taskID}", app.DeleteTaskHandler)
 		r.Post("/", app.CreateTaskHandler)
 	})
 

@@ -51,15 +51,14 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-	t.mu.RLock()
-	defer t.mu.RUnlock()
 	_, err := uuid.Parse(taskID)
 	if err != nil {
-		log.Println("parsing task id", err)
 		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 	for _, task := range t.Tasks {
 		if task.ID == taskID {
 			if err = encoder.Encode(task); err != nil {
@@ -70,6 +69,32 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = writeJSONError(w, http.StatusNotFound, "task not found")
+}
+
+func (t *App) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
+
+	_, err := uuid.Parse(taskID)
+	if err != nil {
+		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
+		return
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for i := range t.Tasks {
+		if t.Tasks[i].ID == taskID {
+			t.Tasks = removeTaskByIndex(t.Tasks, i)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
+	_ = writeJSONError(w, http.StatusNotFound, "task not found")
+}
+
+func removeTaskByIndex(tasks []models.Task, index int) []models.Task {
+	return append(tasks[:index], tasks[index+1:]...)
 }
 
 func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
