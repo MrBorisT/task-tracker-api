@@ -104,7 +104,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	newTask := models.Task{
 		Name: trimmedName,
-		ID:   generateID(),
+		ID:   t.generateID(),
 		Done: false,
 	}
 
@@ -116,6 +116,6 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func generateID() string {
+func (t *App) generateID() string {
 	return uuid.New().String()
 }
