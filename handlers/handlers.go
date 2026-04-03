@@ -15,7 +15,7 @@ import (
 
 type App struct {
 	Tasks []models.Task
-	mu    sync.Mutex
+	mu    sync.RWMutex
 }
 
 func (t *App) HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,10 +35,10 @@ func (t *App) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	encoder := json.NewEncoder(w)
 
-	t.mu.Lock()
+	t.mu.RLock()
 	tasksCopy := make([]models.Task, len(t.Tasks))
 	copy(tasksCopy, t.Tasks)
-	t.mu.Unlock()
+	t.mu.RUnlock()
 
 	if err := encoder.Encode(tasksCopy); err != nil {
 		log.Println("encoding tasks:", err)
@@ -51,8 +51,8 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 	_, err := uuid.Parse(taskID)
 	if err != nil {
 		log.Println("parsing task id", err)
