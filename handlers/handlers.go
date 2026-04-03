@@ -36,8 +36,11 @@ func (t *App) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 
 	t.mu.Lock()
-	defer t.mu.Unlock()
-	if err := encoder.Encode(t.Tasks); err != nil {
+	tasksCopy := make([]models.Task, len(t.Tasks))
+	copy(tasksCopy, t.Tasks)
+	t.mu.Unlock()
+
+	if err := encoder.Encode(tasksCopy); err != nil {
 		log.Println("encoding tasks:", err)
 	}
 }
@@ -53,25 +56,20 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := uuid.Parse(taskID)
 	if err != nil {
 		log.Println("parsing task id", err)
-		writeJSONError(w, http.StatusBadRequest, "invalid task id")
+		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
 
 	for _, task := range t.Tasks {
 		if task.ID == taskID {
-			if err := encoder.Encode(task); err != nil {
+			if err = encoder.Encode(task); err != nil {
 				log.Println("encoding task:", err)
-				if err = writeJSONError(w, http.StatusBadRequest, "failed to encode task"); err != nil {
-					log.Println("encoding error response:", err)
-				}
 			}
 			return
 		}
 	}
 
-	if err := writeJSONError(w, http.StatusNotFound, "task not found"); err != nil {
-		log.Println("encoding error response:", err)
-	}
+	_ = writeJSONError(w, http.StatusNotFound, "task not found")
 }
 
 func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,10 +82,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := decoder.Decode(&taskRequest); err != nil {
 		log.Println("decoding task:", err)
-
-		if err := writeJSONError(w, http.StatusBadRequest, "invalid request body"); err != nil {
-			log.Println("encoding error response:", err)
-		}
+		_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -95,10 +90,7 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	defer t.mu.Unlock()
 	trimmedName := strings.TrimSpace(taskRequest.Name)
 	if trimmedName == "" {
-		if err := writeJSONError(w, http.StatusBadRequest, "task name cannot be empty"); err != nil {
-			log.Println("encoding error response:", err)
-		}
-
+		_ = writeJSONError(w, http.StatusBadRequest, "task name cannot be empty")
 		return
 	}
 
