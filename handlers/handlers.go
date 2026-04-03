@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -14,6 +15,7 @@ import (
 
 type App struct {
 	Tasks []models.Task
+	mu    sync.Mutex
 }
 
 func (t *App) HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +35,8 @@ func (t *App) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	encoder := json.NewEncoder(w)
 
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	if err := encoder.Encode(t.Tasks); err != nil {
 		log.Println("encoding tasks:", err)
 	}
@@ -44,6 +48,8 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
+	t.mu.Lock()
+	t.mu.Unlock()
 	_, err := uuid.Parse(taskID)
 	if err != nil {
 		log.Println("parsing task id", err)
@@ -85,6 +91,8 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	trimmedName := strings.TrimSpace(taskRequest.Name)
 	if trimmedName == "" {
 		if err := writeJSONError(w, http.StatusBadRequest, "task name cannot be empty"); err != nil {
