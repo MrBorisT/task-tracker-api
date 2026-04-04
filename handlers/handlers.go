@@ -145,22 +145,24 @@ func (t *App) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	encoder := json.NewEncoder(w)
 
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
 	if err := decoder.Decode(&taskRequest); err != nil {
 		_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	t.mu.Lock()
-	defer t.mu.Unlock()
+
 	for i := range t.Tasks {
 		if t.Tasks[i].ID == taskID {
-			trimmedName := strings.TrimSpace(taskRequest.Name)
-			if trimmedName == "" {
-				_ = writeJSONError(w, http.StatusBadRequest, "task name cannot be empty")
+			if err := t.updateTask(&t.Tasks[i], taskRequest); err != nil {
+				t.mu.Unlock()
+				_ = writeJSONError(w, http.StatusBadRequest, err.Error())
 				return
 			}
-			t.Tasks[i].Name = trimmedName
-			t.Tasks[i].Done = taskRequest.Done
+
+			t.mu.Unlock()
 			w.WriteHeader(http.StatusOK)
 			if err := encoder.Encode(t.Tasks[i]); err != nil {
 				log.Println("encoding updated task:", err)
@@ -169,8 +171,26 @@ func (t *App) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	t.mu.Unlock()
 	_ = writeJSONError(w, http.StatusNotFound, "task not found")
 
+}
+
+func (t *App) updateTask(task *models.Task, taskRequest models.UpdateTaskRequest) error {
+	if taskRequest.Name == nil && taskRequest.Done == nil {
+		return fmt.Errorf("at least one field (name or done) must be provided for update")
+	}
+	if taskRequest.Name != nil {
+		trimmedName := strings.TrimSpace(*taskRequest.Name)
+		if trimmedName == "" {
+			return fmt.Errorf("task name cannot be empty")
+		}
+		task.Name = trimmedName
+	}
+	if taskRequest.Done != nil {
+		task.Done = *taskRequest.Done
+	}
+	return nil
 }
 
 func (t *App) validateTaskID(taskID string) error {
