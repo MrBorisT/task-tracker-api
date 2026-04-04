@@ -133,6 +133,47 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (t *App) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
+
+	_, err := uuid.Parse(taskID)
+	if err != nil {
+		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
+		return
+	}
+	taskRequest := models.UpdateTaskRequest{}
+
+	decoder := json.NewDecoder(r.Body)
+	encoder := json.NewEncoder(w)
+
+	if err := decoder.Decode(&taskRequest); err != nil {
+		_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for i := range t.Tasks {
+		if t.Tasks[i].ID == taskID {
+			trimmedName := strings.TrimSpace(taskRequest.Name)
+			if trimmedName == "" {
+				_ = writeJSONError(w, http.StatusBadRequest, "task name cannot be empty")
+				return
+			}
+			t.Tasks[i].Name = trimmedName
+			t.Tasks[i].Done = taskRequest.Done
+			w.WriteHeader(http.StatusOK)
+			if err := encoder.Encode(t.Tasks[i]); err != nil {
+				log.Println("encoding updated task:", err)
+			}
+			return
+		}
+	}
+
+	_ = writeJSONError(w, http.StatusNotFound, "task not found")
+
+}
+
 func (t *App) generateID() string {
 	return uuid.New().String()
 }

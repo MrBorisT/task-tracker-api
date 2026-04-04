@@ -35,6 +35,7 @@ func main() {
 		r.Get("/{taskID}", app.GetTaskHandler)
 		r.Delete("/{taskID}", app.DeleteTaskHandler)
 		r.Post("/", app.CreateTaskHandler)
+		r.Put("/{taskID}", app.UpdateTaskHandler)
 	})
 
 	port := ":8080"
