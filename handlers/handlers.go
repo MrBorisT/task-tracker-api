@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -51,9 +52,8 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-	_, err := uuid.Parse(taskID)
-	if err != nil {
-		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
+	if err := t.validateTaskID(taskID); err != nil {
+		_ = writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -61,7 +61,7 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	defer t.mu.RUnlock()
 	for _, task := range t.Tasks {
 		if task.ID == taskID {
-			if err = encoder.Encode(task); err != nil {
+			if err := encoder.Encode(task); err != nil {
 				log.Println("encoding task:", err)
 			}
 			return
@@ -74,8 +74,7 @@ func (t *App) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 func (t *App) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-	_, err := uuid.Parse(taskID)
-	if err != nil {
+	if err := t.validateTaskID(taskID); err != nil {
 		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
@@ -136,11 +135,11 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 func (t *App) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-	_, err := uuid.Parse(taskID)
-	if err != nil {
-		_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
+	if err := t.validateTaskID(taskID); err != nil {
+		_ = writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
 	taskRequest := models.UpdateTaskRequest{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -172,6 +171,14 @@ func (t *App) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = writeJSONError(w, http.StatusNotFound, "task not found")
 
+}
+
+func (t *App) validateTaskID(taskID string) error {
+	_, err := uuid.Parse(taskID)
+	if err != nil {
+		return fmt.Errorf("invalid task id")
+	}
+	return nil
 }
 
 func (t *App) generateID() string {
