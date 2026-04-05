@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	"github.com/MrBorisT/task-tracker-api/handlers"
@@ -20,12 +20,17 @@ func main() {
 	}
 
 	dsn := "host=" + os.Getenv("DB_HOST") + " port=" + os.Getenv("DB_PORT") + " dbname=" + os.Getenv("DB_NAME") + " user=" + os.Getenv("DB_USER") + " password=" + os.Getenv("DB_PASSWORD") + " sslmode=" + os.Getenv("DB_SSLMODE")
-	conn, err := pgx.Connect(context.Background(), dsn)
+	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		log.Println("Unable to connect to database:", err)
 		os.Exit(1)
 	}
-	defer conn.Close(context.Background())
+	defer pool.Close()
+
+	if err := pool.Ping(context.Background()); err != nil {
+		log.Println("Unable to ping database:", err)
+		os.Exit(1)
+	}
 
 	r := chi.NewRouter()
 	app := handlers.App{
