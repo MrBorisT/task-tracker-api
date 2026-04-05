@@ -1,16 +1,32 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 
 	"github.com/MrBorisT/task-tracker-api/handlers"
 	"github.com/MrBorisT/task-tracker-api/models"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading .env file")
+	}
+
+	dsn := "host=" + os.Getenv("DB_HOST") + " port=" + os.Getenv("DB_PORT") + " dbname=" + os.Getenv("DB_NAME") + " user=" + os.Getenv("DB_USER") + " password=" + os.Getenv("DB_PASSWORD") + " sslmode=" + os.Getenv("DB_SSLMODE")
+	conn, err := pgx.Connect(context.Background(), dsn)
+	if err != nil {
+		log.Println("Unable to connect to database:", err)
+		os.Exit(1)
+	}
+	defer conn.Close(context.Background())
+
 	r := chi.NewRouter()
 	app := handlers.App{
 		Tasks: []models.Task{
@@ -40,7 +56,7 @@ func main() {
 
 	port := ":8080"
 	log.Println("started server on port", port)
-	err := http.ListenAndServe(port, r)
+	err = http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalln(err)
 	}
