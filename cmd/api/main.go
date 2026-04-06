@@ -32,6 +32,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	rows, err := pool.Query(context.Background(), "SELECT id, name, status FROM tasks")
+	if err != nil {
+		log.Println("Unable to execute query:", err)
+		os.Exit(1)
+	}
+	for rows.Next() {
+		newTask := models.Task{}
+		if err := rows.Scan(&newTask.ID, &newTask.Name, &newTask.Done); err != nil {
+			log.Println("Unable to scan row:", err)
+			os.Exit(1)
+		}
+		log.Println("Task: ", newTask)
+	}
+	//TODO change Done to status in db and in code
+
 	r := chi.NewRouter()
 	app := handlers.App{
 		Tasks: []models.Task{
