@@ -1,9 +1,9 @@
 package models
 
 type Task struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
-	Done bool   `json:"done"`
+	ID     string     `json:"id,omitempty"`
+	Name   string     `json:"name,omitempty"`
+	Status TaskStatus `json:"status"`
 }
 
 type CreateTaskRequest struct {
@@ -11,6 +11,6 @@ type CreateTaskRequest struct {
 }
 
 type UpdateTaskRequest struct {
-	Name *string `json:"name,omitempty"`
-	Done *bool   `json:"done,omitempty"`
+	Name   *string     `json:"name,omitempty"`
+	Status *TaskStatus `json:"status,omitempty"`
 }

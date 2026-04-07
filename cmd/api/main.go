@@ -39,7 +39,7 @@ func main() {
 	}
 	for rows.Next() {
 		newTask := models.Task{}
-		if err := rows.Scan(&newTask.ID, &newTask.Name, &newTask.Done); err != nil {
+		if err := rows.Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
 			log.Println("Unable to scan row:", err)
 			os.Exit(1)
 		}

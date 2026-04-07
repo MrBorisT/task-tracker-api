@@ -119,9 +119,9 @@ func (t *App) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newTask := models.Task{
-		Name: trimmedName,
-		ID:   t.generateID(),
-		Done: false,
+		Name:   trimmedName,
+		ID:     t.generateID(),
+		Status: models.StatusNew,
 	}
 
 	t.Tasks = append(t.Tasks, newTask)
@@ -177,8 +177,8 @@ func (t *App) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *App) updateTask(task *models.Task, taskRequest models.UpdateTaskRequest) error {
-	if taskRequest.Name == nil && taskRequest.Done == nil {
-		return fmt.Errorf("at least one field (name or done) must be provided for update")
+	if taskRequest.Name == nil && taskRequest.Status == nil {
+		return fmt.Errorf("at least one field (name or status) must be provided for update")
 	}
 	if taskRequest.Name != nil {
 		trimmedName := strings.TrimSpace(*taskRequest.Name)
@@ -187,8 +187,11 @@ func (t *App) updateTask(task *models.Task, taskRequest models.UpdateTaskRequest
 		}
 		task.Name = trimmedName
 	}
-	if taskRequest.Done != nil {
-		task.Done = *taskRequest.Done
+	if taskRequest.Status != nil {
+		if !taskRequest.Status.IsValid() {
+			return fmt.Errorf("invalid task status")
+		}
+		task.Status = *taskRequest.Status
 	}
 	return nil
 }
