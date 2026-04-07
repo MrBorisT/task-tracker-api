@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
-	"github.com/MrBorisT/task-tracker-api/handlers"
-	"github.com/MrBorisT/task-tracker-api/models"
+	"github.com/MrBorisT/task-tracker-api/internal/handlers"
+	"github.com/MrBorisT/task-tracker-api/internal/storage"
 )
 
 func main() {
@@ -32,46 +32,34 @@ func main() {
 		os.Exit(1)
 	}
 
-	rows, err := pool.Query(context.Background(), "SELECT id, name, status FROM tasks")
-	if err != nil {
-		log.Println("Unable to execute query:", err)
-		os.Exit(1)
-	}
-	for rows.Next() {
-		newTask := models.Task{}
-		if err := rows.Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
-			log.Println("Unable to scan row:", err)
-			os.Exit(1)
-		}
-		log.Println("Task: ", newTask)
-	}
-	//TODO change Done to status in db and in code
+	//testing select statement
+	// rows, err := pool.Query(context.Background(), "SELECT id, name, status FROM tasks")
+	// if err != nil {
+	// 	log.Println("Unable to execute query:", err)
+	// 	os.Exit(1)
+	// }
+	// for rows.Next() {
+	// 	newTask := models.Task{}
+	// 	if err := rows.Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
+	// 		log.Println("Unable to scan row:", err)
+	// 		os.Exit(1)
+	// 	}
+	// 	log.Println("Task: ", newTask)
+	// }
 
 	r := chi.NewRouter()
-	app := handlers.App{
-		Tasks: []models.Task{
-			{
-				ID:   "11111111-1111-1111-1111-111111111111",
-				Name: "Wake up",
-			},
-			{
-				ID:   "22222222-2222-2222-2222-222222222222",
-				Name: "Grab a brush",
-			},
-			{
-				ID:   "33333333-3333-3333-3333-333333333333",
-				Name: "Put a little make up",
-			},
-		},
+
+	taskStore := storage.TaskStore{
+		Pool: pool,
 	}
 
-	r.Get("/health", app.HealthHandler)
+	r.Get("/health", handlers.HealthHandler(&taskStore))
 	r.Route("/tasks", func(r chi.Router) {
-		r.Get("/", app.GetTasksHandler)
-		r.Get("/{taskID}", app.GetTaskHandler)
-		r.Delete("/{taskID}", app.DeleteTaskHandler)
-		r.Post("/", app.CreateTaskHandler)
-		r.Put("/{taskID}", app.UpdateTaskHandler)
+		r.Get("/", handlers.GetTasksHandler(&taskStore))
+		r.Get("/{taskID}", handlers.GetTaskHandler(&taskStore))
+		r.Delete("/{taskID}", handlers.DeleteTaskHandler(&taskStore))
+		r.Post("/", handlers.CreateTaskHandler(&taskStore))
+		r.Put("/{taskID}", handlers.UpdateTaskHandler(&taskStore))
 	})
 
 	port := ":8080"
