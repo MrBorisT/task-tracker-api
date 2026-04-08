@@ -11,6 +11,7 @@ type CreateTaskRequest struct {
 }
 
 type UpdateTaskRequest struct {
+	ID     string      `json:"id,omitempty"`
 	Name   *string     `json:"name,omitempty"`
 	Status *TaskStatus `json:"status,omitempty"`
 }

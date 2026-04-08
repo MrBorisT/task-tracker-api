@@ -64,137 +64,75 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	}
 }
 
-func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
+func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
+		taskRequest := models.CreateTaskRequest{}
 
-		// if err := validateTaskID(taskID); err != nil {
-		// 	_ = writeJSONError(w, http.StatusBadRequest, "invalid task id")
-		// 	return
-		// }
+		decoder := json.NewDecoder(r.Body)
+		encoder := json.NewEncoder(w)
 
-		// taskStore.MU.Lock()
-		// defer taskStore.MU.Unlock()
-		// for i := range taskStore.Tasks {
-		// 	if taskStore.Tasks[i].ID == taskID {
-		// 		taskStore.Tasks = removeTaskByIndex(taskStore.Tasks, i)
-		// 		w.WriteHeader(http.StatusNoContent)
-		// 		return
-		// 	}
-		// }
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-		// _ = writeJSONError(w, http.StatusNotFound, "task not found")
+		if err := decoder.Decode(&taskRequest); err != nil {
+			log.Println("decoding task:", err)
+			_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+
+		newTask, err := taskStore.CreateTask(r.Context(), taskRequest)
+		if err != nil {
+			log.Println("creating task:", err)
+			_ = writeJSONError(w, http.StatusInternalServerError, "error creating task")
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+
+		if err := encoder.Encode(newTask); err != nil {
+			log.Println("post new task:", err)
+		}
 	}
 }
 
-// func removeTaskByIndex(tasks []models.Task, index int) []models.Task {
-// 	return append(tasks[:index], tasks[index+1:]...)
-// }
-
-func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
+func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// taskRequest := models.CreateTaskRequest{}
+		taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-		// decoder := json.NewDecoder(r.Body)
-		// encoder := json.NewEncoder(w)
-
-		// w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-		// if err := decoder.Decode(&taskRequest); err != nil {
-		// 	log.Println("decoding task:", err)
-		// 	_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
-		// 	return
-		// }
-
-		// taskStore.MU.Lock()
-		// defer taskStore.MU.Unlock()
-		// trimmedName := strings.TrimSpace(taskRequest.Name)
-		// if trimmedName == "" {
-		// 	_ = writeJSONError(w, http.StatusBadRequest, "task name cannot be empty")
-		// 	return
-		// }
-
-		// newTask := models.Task{
-		// 	Name:   trimmedName,
-		// 	ID:     generateID(),
-		// 	Status: models.StatusNew,
-		// }
-
-		// taskStore.Tasks = append(taskStore.Tasks, newTask)
-		// w.WriteHeader(http.StatusCreated)
-
-		// if err := encoder.Encode(newTask); err != nil {
-		// 	log.Println("post new task:", err)
-		// }
+		if err := taskStore.DeleteTask(r.Context(), taskID); err != nil {
+			log.Println("deleting task:", err)
+			_ = writeJSONError(w, http.StatusInternalServerError, "error deleting task")
+			return
+		} else {
+			w.WriteHeader(http.StatusNoContent)
+		}
 	}
 }
 
 func UpdateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
+		taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
+		taskRequest := models.UpdateTaskRequest{ID: taskID}
 
-		// // if err := validateTaskID(taskID); err != nil {
-		// // 	_ = writeJSONError(w, http.StatusBadRequest, err.Error())
-		// // 	return
-		// // }
+		decoder := json.NewDecoder(r.Body)
+		encoder := json.NewEncoder(w)
 
-		// taskRequest := models.UpdateTaskRequest{}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-		// decoder := json.NewDecoder(r.Body)
-		// encoder := json.NewEncoder(w)
+		if err := decoder.Decode(&taskRequest); err != nil {
+			_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
 
-		// w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-		// if err := decoder.Decode(&taskRequest); err != nil {
-		// 	_ = writeJSONError(w, http.StatusBadRequest, "invalid request body")
-		// 	return
-		// }
-
-		// taskStore.MU.Lock()
-
-		// for i := range taskStore.Tasks {
-		// 	if taskStore.Tasks[i].ID == taskID {
-		// 		if err := updateTask(&taskStore.Tasks[i], taskRequest); err != nil {
-		// 			taskStore.MU.Unlock()
-		// 			_ = writeJSONError(w, http.StatusBadRequest, err.Error())
-		// 			return
-		// 		}
-
-		// 		taskStore.MU.Unlock()
-		// 		w.WriteHeader(http.StatusOK)
-		// 		if err := encoder.Encode(taskStore.Tasks[i]); err != nil {
-		// 			log.Println("encoding updated task:", err)
-		// 		}
-		// 		return
-		// 	}
-		// }
-
-		// taskStore.MU.Unlock()
-		// _ = writeJSONError(w, http.StatusNotFound, "task not found")
+		if newTask, err := taskStore.UpdateTask(r.Context(), taskRequest); err != nil {
+			log.Println("updating task:", err)
+			_ = writeJSONError(w, http.StatusInternalServerError, "error updating task")
+			return
+		} else if newTask != nil {
+			if err := encoder.Encode(newTask); err != nil {
+				log.Println("encoding updated task:", err)
+			}
+			return
+		}
+		_ = writeJSONError(w, http.StatusNotFound, "task not found")
 	}
 }
-
-// get rid of these functions below!!!
-// func updateTask(task *models.Task, taskRequest models.UpdateTaskRequest) error {
-// 	if taskRequest.Name == nil && taskRequest.Status == nil {
-// 		return fmt.Errorf("at least one field (name or status) must be provided for update")
-// 	}
-// 	if taskRequest.Name != nil {
-// 		trimmedName := strings.TrimSpace(*taskRequest.Name)
-// 		if trimmedName == "" {
-// 			return fmt.Errorf("task name cannot be empty")
-// 		}
-// 		task.Name = trimmedName
-// 	}
-// 	if taskRequest.Status != nil {
-// 		if !taskRequest.Status.IsValid() {
-// 			return fmt.Errorf("invalid task status")
-// 		}
-// 		task.Status = *taskRequest.Status
-// 	}
-// 	return nil
-// }
-
-// func generateID() string {
-// 	return uuid.New().String()
-// }
