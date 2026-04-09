@@ -15,38 +15,12 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file")
-	}
-
-	dsn := "host=" + os.Getenv("DB_HOST") + " port=" + os.Getenv("DB_PORT") + " dbname=" + os.Getenv("DB_NAME") + " user=" + os.Getenv("DB_USER") + " password=" + os.Getenv("DB_PASSWORD") + " sslmode=" + os.Getenv("DB_SSLMODE")
-	pool, err := pgxpool.New(context.Background(), dsn)
+	pool, err := newPool()
 	if err != nil {
-		log.Println("Unable to connect to database:", err)
-		os.Exit(1)
+		log.Fatalln("Unable to create database pool:", err)
 	}
+
 	defer pool.Close()
-
-	if err := pool.Ping(context.Background()); err != nil {
-		log.Println("Unable to ping database:", err)
-		os.Exit(1)
-	}
-
-	//testing select statement
-	// rows, err := pool.Query(context.Background(), "SELECT id, name, status FROM tasks")
-	// if err != nil {
-	// 	log.Println("Unable to execute query:", err)
-	// 	os.Exit(1)
-	// }
-	// for rows.Next() {
-	// 	newTask := models.Task{}
-	// 	if err := rows.Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
-	// 		log.Println("Unable to scan row:", err)
-	// 		os.Exit(1)
-	// 	}
-	// 	log.Println("Task: ", newTask)
-	// }
-
 	r := chi.NewRouter()
 
 	taskStore := storage.TaskStore{
@@ -67,5 +41,23 @@ func main() {
 	err = http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalln(err)
+	}
+}
+
+func compileDSN() string {
+	return "host=" + os.Getenv("DB_HOST") + " port=" + os.Getenv("DB_PORT") + " dbname=" + os.Getenv("DB_NAME") + " user=" + os.Getenv("DB_USER") + " password=" + os.Getenv("DB_PASSWORD") + " sslmode=" + os.Getenv("DB_SSLMODE")
+}
+
+func newPool() (*pgxpool.Pool, error) {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading .env file")
+	}
+	if pool, err := pgxpool.New(context.Background(), compileDSN()); err != nil {
+		return nil, err
+	} else {
+		if err := pool.Ping(context.Background()); err != nil {
+			return nil, err
+		}
+		return pool, nil
 	}
 }

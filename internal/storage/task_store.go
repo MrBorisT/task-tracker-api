@@ -41,15 +41,15 @@ func (s *TaskStore) ListTasks(ctx context.Context) ([]models.Task, error) {
 }
 
 func (s *TaskStore) GetTask(ctx context.Context, id string) (*models.Task, error) {
-	if err := s.validateTaskID(id); err != nil {
-		return nil, err
+	if !s.validateTaskID(id) {
+		return nil, ErrInvalidTaskID
 	}
 	resultTask := models.Task{}
 
 	query := "SELECT id, name, status FROM tasks WHERE id = $1"
 	if err := s.Pool.QueryRow(ctx, query, id).Scan(&resultTask.ID, &resultTask.Name, &resultTask.Status); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("task not found")
+			return nil, ErrTaskNotFound
 		} else {
 			return nil, fmt.Errorf("error getting task: %w", err)
 		}
@@ -59,8 +59,8 @@ func (s *TaskStore) GetTask(ctx context.Context, id string) (*models.Task, error
 }
 
 func (s *TaskStore) CreateTask(ctx context.Context, task models.CreateTaskRequest) (*models.Task, error) {
-	if task.Name == "" {
-		return nil, fmt.Errorf("task name cannot be empty")
+	if strings.TrimSpace(task.Name) == "" {
+		return nil, ErrEmptyTaskName
 	}
 
 	newTask := models.Task{
@@ -70,8 +70,9 @@ func (s *TaskStore) CreateTask(ctx context.Context, task models.CreateTaskReques
 	}
 
 	query := "INSERT INTO tasks (id, name, status) VALUES ($1, $2, $3) RETURNING id, name, status"
+	row := s.Pool.QueryRow(ctx, query, newTask.ID, newTask.Name, newTask.Status)
 
-	if err := s.Pool.QueryRow(ctx, query, newTask.ID, newTask.Name, newTask.Status).Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
+	if err := row.Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
 		return nil, fmt.Errorf("error creating task: %w", err)
 	} else {
 		return &newTask, nil
@@ -79,8 +80,8 @@ func (s *TaskStore) CreateTask(ctx context.Context, task models.CreateTaskReques
 }
 
 func (s *TaskStore) DeleteTask(ctx context.Context, id string) error {
-	if err := s.validateTaskID(id); err != nil {
-		return err
+	if !s.validateTaskID(id) {
+		return ErrInvalidTaskID
 	}
 
 	query := "DELETE FROM tasks WHERE id = $1"
@@ -89,52 +90,49 @@ func (s *TaskStore) DeleteTask(ctx context.Context, id string) error {
 		return fmt.Errorf("error deleting task: %w", err)
 	}
 	if commandTag.RowsAffected() == 0 {
-		return fmt.Errorf("task not found")
+		return ErrTaskNotFound
 	}
 	return nil
 }
 
 func (s *TaskStore) UpdateTask(ctx context.Context, task models.UpdateTaskRequest) (*models.Task, error) {
-	if err := s.validateTaskID(task.ID); err != nil {
-		return nil, err
+	if !s.validateTaskID(task.ID) {
+		return nil, ErrInvalidTaskID
 	}
 	if task.Name == nil && task.Status == nil {
-		return nil, fmt.Errorf("at least one field (name or status) must be provided for update")
+		return nil, ErrMissingUpdateFields
 	}
 	if task.Name != nil {
 		if strings.TrimSpace(*task.Name) == "" {
-			return nil, fmt.Errorf("task name cannot be empty")
+			return nil, ErrEmptyTaskName
 		}
 	}
 	if task.Status != nil {
 		if !task.Status.IsValid() {
-			return nil, fmt.Errorf("invalid task status")
+			return nil, ErrInvalidTaskStatus
 		}
 	}
 
 	query := "UPDATE tasks SET name = COALESCE($1, name), status = COALESCE($2, status) WHERE id = $3 RETURNING id, name, status"
 
-	if err := s.Pool.QueryRow(ctx, query, task.Name, task.Status, task.ID).Scan(&task.ID, &task.Name, &task.Status); err != nil {
+	updatedTask := models.Task{ID: task.ID}
+	row := s.Pool.QueryRow(ctx, query, task.Name, task.Status, task.ID)
+	if err := row.Scan(&updatedTask.ID, &updatedTask.Name, &updatedTask.Status); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("task not found")
+			return nil, ErrTaskNotFound
 		} else {
 			return nil, fmt.Errorf("error updating task: %w", err)
 		}
-	} else {
-		return &models.Task{
-			ID:     task.ID,
-			Name:   *task.Name,
-			Status: *task.Status,
-		}, nil
 	}
+	return &updatedTask, nil
 }
 
-func (s *TaskStore) validateTaskID(taskID string) error {
+func (s *TaskStore) validateTaskID(taskID string) bool {
 	_, err := uuid.Parse(taskID)
 	if err != nil {
-		return fmt.Errorf("invalid task id")
+		return false
 	}
-	return nil
+	return true
 }
 
 func (s *TaskStore) generateID() string {

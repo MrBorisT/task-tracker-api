@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -52,7 +53,16 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 		taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 		if task, err := taskStore.GetTask(r.Context(), taskID); err != nil {
-			_ = writeJSONError(w, http.StatusBadRequest, err.Error())
+			switch {
+			case errors.Is(err, storage.ErrInvalidTaskID):
+				_ = writeJSONError(w, http.StatusBadRequest, "invalid task ID")
+				return
+			case errors.Is(err, storage.ErrTaskNotFound):
+				_ = writeJSONError(w, http.StatusNotFound, "task not found")
+				return
+			}
+			log.Println("getting task:", err)
+			_ = writeJSONError(w, http.StatusInternalServerError, "error getting task")
 			return
 		} else if task != nil {
 			if err := encoder.Encode(task); err != nil {
@@ -60,7 +70,6 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			}
 			return
 		}
-		_ = writeJSONError(w, http.StatusNotFound, "task not found")
 	}
 }
 
@@ -81,6 +90,10 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 		newTask, err := taskStore.CreateTask(r.Context(), taskRequest)
 		if err != nil {
+			if err == storage.ErrEmptyTaskName {
+				_ = writeJSONError(w, http.StatusBadRequest, "task name cannot be empty")
+				return
+			}
 			log.Println("creating task:", err)
 			_ = writeJSONError(w, http.StatusInternalServerError, "error creating task")
 			return
@@ -99,9 +112,18 @@ func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
 		if err := taskStore.DeleteTask(r.Context(), taskID); err != nil {
-			log.Println("deleting task:", err)
-			_ = writeJSONError(w, http.StatusInternalServerError, "error deleting task")
-			return
+			switch {
+			case errors.Is(err, storage.ErrInvalidTaskID):
+				_ = writeJSONError(w, http.StatusBadRequest, "invalid task ID")
+				return
+			case errors.Is(err, storage.ErrTaskNotFound):
+				_ = writeJSONError(w, http.StatusNotFound, "task not found")
+				return
+			default:
+				log.Println("deleting task:", err)
+				_ = writeJSONError(w, http.StatusInternalServerError, "error deleting task")
+				return
+			}
 		} else {
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -124,15 +146,30 @@ func UpdateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		}
 
 		if newTask, err := taskStore.UpdateTask(r.Context(), taskRequest); err != nil {
-			log.Println("updating task:", err)
-			_ = writeJSONError(w, http.StatusInternalServerError, "error updating task")
-			return
+			switch {
+			case errors.Is(err, storage.ErrInvalidTaskID):
+				_ = writeJSONError(w, http.StatusBadRequest, "invalid task ID")
+				return
+			case errors.Is(err, storage.ErrEmptyTaskName):
+				_ = writeJSONError(w, http.StatusBadRequest, "task name cannot be empty")
+				return
+			case errors.Is(err, storage.ErrInvalidTaskStatus):
+				_ = writeJSONError(w, http.StatusBadRequest, "invalid task status")
+				return
+			case errors.Is(err, storage.ErrMissingUpdateFields):
+				_ = writeJSONError(w, http.StatusBadRequest, "at least one field (name or status) must be provided for update")
+				return
+			default:
+				log.Println("updating task:", err)
+				_ = writeJSONError(w, http.StatusInternalServerError, "error updating task")
+				return
+			}
 		} else if newTask != nil {
 			if err := encoder.Encode(newTask); err != nil {
 				log.Println("encoding updated task:", err)
+				_ = writeJSONError(w, http.StatusInternalServerError, "error updating task")
 			}
 			return
 		}
-		_ = writeJSONError(w, http.StatusNotFound, "task not found")
 	}
 }
