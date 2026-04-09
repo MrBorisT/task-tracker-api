@@ -35,25 +35,14 @@ func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		encoder := json.NewEncoder(w)
 
 		q := r.URL.Query()
-		status := models.TaskStatus(q.Get("status"))
-		if status != "" {
-			if !status.IsValid() {
-				_ = writeJSONError(w, http.StatusBadRequest, "invalid status filter")
-				return
-			}
-		}
-
-		limit, err := strconv.Atoi(q.Get("limit"))
+		query, err := newGetTasksQuery(q.Get("status"), q.Get("limit"))
 		if err != nil {
-			limit = 10
+			log.Println("parsing query parameters:", err)
+			_ = writeJSONError(w, http.StatusBadRequest, "invalid query parameters")
+			return
 		}
 
-		query := models.GetTasksQuery{
-			Status: string(status),
-			Limit:  limit,
-		}
-
-		tasks, err := taskStore.ListTasks(r.Context(), query)
+		tasks, err := taskStore.ListTasks(r.Context(), *query)
 		if err != nil {
 			log.Println("listing tasks:", err)
 			_ = writeJSONError(w, http.StatusInternalServerError, "error listing tasks")
@@ -64,6 +53,24 @@ func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			log.Println("encoding tasks:", err)
 		}
 	}
+}
+
+func newGetTasksQuery(statusStr, limitStr string) (*models.GetTasksQuery, error) {
+	status := models.TaskStatus(statusStr)
+	if status != "" {
+		if !status.IsValid() {
+			return nil, errors.New("invalid task status: " + statusStr)
+		}
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10
+	}
+	query := &models.GetTasksQuery{
+		Status: string(status),
+		Limit:  limit,
+	}
+	return query, nil
 }
 
 func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
