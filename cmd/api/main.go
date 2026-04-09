@@ -23,17 +23,15 @@ func main() {
 	defer pool.Close()
 	r := chi.NewRouter()
 
-	taskStore := storage.TaskStore{
-		Pool: pool,
-	}
+	taskStore := storage.NewTaskStore(pool)
 
-	r.Get("/health", handlers.HealthHandler(&taskStore))
+	r.Get("/health", handlers.HealthHandler(taskStore))
 	r.Route("/tasks", func(r chi.Router) {
-		r.Get("/", handlers.GetTasksHandler(&taskStore))
-		r.Get("/{taskID}", handlers.GetTaskHandler(&taskStore))
-		r.Delete("/{taskID}", handlers.DeleteTaskHandler(&taskStore))
-		r.Post("/", handlers.CreateTaskHandler(&taskStore))
-		r.Put("/{taskID}", handlers.UpdateTaskHandler(&taskStore))
+		r.Get("/", handlers.GetTasksHandler(taskStore))
+		r.Get("/{taskID}", handlers.GetTaskHandler(taskStore))
+		r.Delete("/{taskID}", handlers.DeleteTaskHandler(taskStore))
+		r.Post("/", handlers.CreateTaskHandler(taskStore))
+		r.Put("/{taskID}", handlers.UpdateTaskHandler(taskStore))
 	})
 
 	port := ":8080"
@@ -52,12 +50,12 @@ func newPool() (*pgxpool.Pool, error) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Error loading .env file")
 	}
-	if pool, err := pgxpool.New(context.Background(), compileDSN()); err != nil {
+	pool, err := pgxpool.New(context.Background(), compileDSN())
+	if err != nil {
 		return nil, err
-	} else {
-		if err := pool.Ping(context.Background()); err != nil {
-			return nil, err
-		}
-		return pool, nil
 	}
+	if err := pool.Ping(context.Background()); err != nil {
+		return nil, err
+	}
+	return pool, nil
 }

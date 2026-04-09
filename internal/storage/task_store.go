@@ -15,6 +15,10 @@ type TaskStore struct {
 	Pool *pgxpool.Pool
 }
 
+func NewTaskStore(pool *pgxpool.Pool) *TaskStore {
+	return &TaskStore{Pool: pool}
+}
+
 func (s *TaskStore) ListTasks(ctx context.Context) ([]models.Task, error) {
 	query := "SELECT id, name, status FROM tasks"
 	rows, err := s.Pool.Query(ctx, query)
