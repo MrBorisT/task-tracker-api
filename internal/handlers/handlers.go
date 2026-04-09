@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -33,7 +34,26 @@ func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		encoder := json.NewEncoder(w)
 
-		tasks, err := taskStore.ListTasks(r.Context())
+		q := r.URL.Query()
+		status := models.TaskStatus(q.Get("status"))
+		if status != "" {
+			if !status.IsValid() {
+				_ = writeJSONError(w, http.StatusBadRequest, "invalid status filter")
+				return
+			}
+		}
+
+		limit, err := strconv.Atoi(q.Get("limit"))
+		if err != nil {
+			limit = 10
+		}
+
+		query := models.GetTasksQuery{
+			Status: string(status),
+			Limit:  limit,
+		}
+
+		tasks, err := taskStore.ListTasks(r.Context(), query)
 		if err != nil {
 			log.Println("listing tasks:", err)
 			_ = writeJSONError(w, http.StatusInternalServerError, "error listing tasks")

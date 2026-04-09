@@ -15,3 +15,8 @@ type UpdateTaskRequest struct {
 	Name   *string     `json:"name,omitempty"`
 	Status *TaskStatus `json:"status,omitempty"`
 }
+
+type GetTasksQuery struct {
+	Status string
+	Limit  int
+}
