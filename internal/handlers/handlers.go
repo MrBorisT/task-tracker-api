@@ -98,7 +98,6 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		taskRequest := models.CreateTaskRequest{}
 
 		decoder := json.NewDecoder(r.Body)
-		encoder := json.NewEncoder(w)
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -121,6 +120,7 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusCreated)
 
+		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(newTask); err != nil {
 			log.Println("post new task:", err)
 		}
