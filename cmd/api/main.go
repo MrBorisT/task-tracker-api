@@ -4,18 +4,26 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/MrBorisT/task-tracker-api/internal/config"
 	"github.com/MrBorisT/task-tracker-api/internal/handlers"
 	"github.com/MrBorisT/task-tracker-api/internal/storage"
 )
 
 func main() {
-	pool, err := newPool()
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading .env file")
+	}
+	config, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalln("Error loading configuration:", err)
+	}
+	pool, err := newPool(config)
 	if err != nil {
 		log.Fatalln("Unable to create database pool:", err)
 	}
@@ -34,27 +42,32 @@ func main() {
 		r.Put("/{taskID}", handlers.UpdateTaskHandler(taskStore))
 	})
 
-	port := ":8080"
-	log.Println("started server on port", port)
-	err = http.ListenAndServe(port, r)
+	log.Println("started server on port", config.Port)
+	err = http.ListenAndServe(config.Port, r)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func compileDSN() string {
-	return "host=" + os.Getenv("DB_HOST") + " port=" + os.Getenv("DB_PORT") + " dbname=" + os.Getenv("DB_NAME") + " user=" + os.Getenv("DB_USER") + " password=" + os.Getenv("DB_PASSWORD") + " sslmode=" + os.Getenv("DB_SSLMODE")
+func compileDSN(config *config.Config) string {
+	return "host=" + config.DBHost +
+		" port=" + config.DBPort +
+		" dbname=" + config.DBName +
+		" user=" + config.DBUser +
+		" password=" + config.DBPassword +
+		" sslmode=" + config.DBSSLMode
 }
 
-func newPool() (*pgxpool.Pool, error) {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file")
-	}
-	pool, err := pgxpool.New(context.Background(), compileDSN())
+func newPool(config *config.Config) (*pgxpool.Pool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	dsn := compileDSN(config)
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, err
 	}
-	if err := pool.Ping(context.Background()); err != nil {
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, err
 	}
 	return pool, nil
