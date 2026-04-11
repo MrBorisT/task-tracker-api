@@ -32,6 +32,7 @@ func main() {
 	r := chi.NewRouter()
 
 	taskStore := storage.NewTaskStore(pool)
+	userStore := storage.NewUserStore(pool)
 
 	r.Get("/health", handlers.HealthHandler())
 	r.Route("/tasks", func(r chi.Router) {
@@ -40,6 +41,9 @@ func main() {
 		r.Delete("/{taskID}", handlers.DeleteTaskHandler(taskStore))
 		r.Post("/", handlers.CreateTaskHandler(taskStore))
 		r.Put("/{taskID}", handlers.UpdateTaskHandler(taskStore))
+	})
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", handlers.RegisterUserHandler(userStore))
 	})
 
 	log.Println("started server on port", config.Port)
