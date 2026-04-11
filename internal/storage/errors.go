@@ -15,4 +15,9 @@ var (
 	ErrEmptyUserPassword = errors.New("user password cannot be empty")
 	ErrShortUserPassword = errors.New("user password must be at least 6 characters long")
 	ErrLongUserPassword  = errors.New("user password cannot be longer than 72 characters")
+	ErrUserAlreadyExists = errors.New("user with this email already exists")
+)
+
+const (
+	PGCodeUniqueViolation = "23505"
 )

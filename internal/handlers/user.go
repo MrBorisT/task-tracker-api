@@ -33,6 +33,8 @@ func RegisterUserHandler(userStore *storage.UserStore) http.HandlerFunc {
 				_ = writeJSONError(w, http.StatusBadRequest, "user password must be at least 6 characters long")
 			case storage.ErrLongUserPassword:
 				_ = writeJSONError(w, http.StatusBadRequest, "user password cannot be longer than 72 characters")
+			case storage.ErrUserAlreadyExists:
+				_ = writeJSONError(w, http.StatusConflict, "user with this email already exists")
 			default:
 				log.Println("registering user:", err)
 				_ = writeJSONError(w, http.StatusInternalServerError, "error registering user")

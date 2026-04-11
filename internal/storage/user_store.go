@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/MrBorisT/task-tracker-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -47,8 +50,13 @@ func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.Registe
 	}
 	query := "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)"
 	_, err = s.Pool.Exec(ctx, query, newUser.ID, newUser.Email, newUser.PasswordHash)
-
-	return err
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == PGCodeUniqueViolation {
+			return ErrUserAlreadyExists
+		}
+	}
+	return fmt.Errorf("create user: %w", err)
 }
 
 func (s *UserStore) generateID() string {
