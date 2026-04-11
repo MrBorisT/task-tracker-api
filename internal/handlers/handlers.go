@@ -37,7 +37,6 @@ func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		q := r.URL.Query()
 		query, err := newGetTasksQuery(q.Get("status"), q.Get("limit"))
 		if err != nil {
-			log.Println("parsing query parameters:", err)
 			_ = writeJSONError(w, http.StatusBadRequest, "invalid query parameters")
 			return
 		}
@@ -62,9 +61,15 @@ func newGetTasksQuery(statusStr, limitStr string) (*models.GetTasksQuery, error)
 			return nil, errors.New("invalid task status: " + statusStr)
 		}
 	}
+	if limitStr == "" {
+		limitStr = "10"
+	}
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
-		limit = 10
+		return nil, errors.New("invalid limit: " + limitStr)
+	}
+	if limit < 0 {
+		return nil, errors.New("limit cannot be negative: " + limitStr)
 	}
 	query := &models.GetTasksQuery{
 		Status: string(status),
