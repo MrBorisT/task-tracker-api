@@ -33,7 +33,7 @@ func main() {
 
 	taskStore := storage.NewTaskStore(pool)
 
-	r.Get("/health", handlers.HealthHandler(taskStore))
+	r.Get("/health", handlers.HealthHandler())
 	r.Route("/tasks", func(r chi.Router) {
 		r.Get("/", handlers.GetTasksHandler(taskStore))
 		r.Get("/{taskID}", handlers.GetTaskHandler(taskStore))

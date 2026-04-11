@@ -14,14 +14,12 @@ import (
 	"github.com/MrBorisT/task-tracker-api/internal/storage"
 )
 
-func HealthHandler(taskStore *storage.TaskStore) http.HandlerFunc {
+func HealthHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		currentHealth := models.Health{
 			Status: "ok",
 		}
-		//TODO check Health
-
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(currentHealth); err != nil {
 			log.Println("encoding server health:", err)
