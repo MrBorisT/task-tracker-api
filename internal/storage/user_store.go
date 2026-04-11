@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/MrBorisT/task-tracker-api/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -21,24 +21,8 @@ func NewUserStore(pool *pgxpool.Pool) *UserStore {
 	return &UserStore{Pool: pool}
 }
 
-func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.RegisterUserRequest) error {
-	trimmedEmail := strings.TrimSpace(userRequest.Email)
-	if trimmedEmail == "" {
-		return ErrEmptyUserEmail
-	}
-
-	trimmedPassword := strings.TrimSpace(userRequest.Password)
-	if trimmedPassword == "" {
-		return ErrEmptyUserPassword
-	}
-	if len(trimmedPassword) < 6 {
-		return ErrShortUserPassword
-	}
-	if len(trimmedPassword) > 72 {
-		return ErrLongUserPassword
-	}
-
-	hashedPassword, err := s.hashPassword(trimmedPassword)
+func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.UserRequest) error {
+	hashedPassword, err := s.hashPassword(userRequest.Password)
 	if err != nil {
 		return err
 	}
@@ -57,6 +41,29 @@ func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.Registe
 		}
 	}
 	return fmt.Errorf("create user: %w", err)
+}
+
+func (s *UserStore) GetUserID(ctx context.Context, userRequest models.UserRequest) (string, error) {
+	hashedPassword, err := s.hashPassword(userRequest.Password)
+	if err != nil {
+		return "", err
+	}
+
+	query := "SELECT id, password_hash FROM users WHERE email = $1"
+	row := s.Pool.QueryRow(ctx, query, userRequest.Email)
+
+	var userID string
+	if err := row.Scan(&userID, &hashedPassword); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrUserNotFound
+		}
+		return "", fmt.Errorf("querying user: %w", err)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(userRequest.Password)); err != nil {
+		return "", ErrInvalidCredentials
+	}
+
+	return userID, nil
 }
 
 func (s *UserStore) generateID() string {

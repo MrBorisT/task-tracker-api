@@ -1,6 +1,6 @@
 package models
 
-type RegisterUserRequest struct {
+type UserRequest struct {
 	Email    string `json:"email,omitempty"`
 	Password string `json:"password,omitempty"`
 }

@@ -44,6 +44,7 @@ func main() {
 	})
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", handlers.RegisterUserHandler(userStore))
+		r.Post("/login", handlers.LoginUserHandler(userStore))
 	})
 
 	log.Println("started server on port", config.Port)

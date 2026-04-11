@@ -11,11 +11,9 @@ var (
 	ErrMissingUpdateFields = errors.New("at least one field (name or status) must be provided for update")
 
 	//user
-	ErrEmptyUserEmail    = errors.New("user email cannot be empty")
-	ErrEmptyUserPassword = errors.New("user password cannot be empty")
-	ErrShortUserPassword = errors.New("user password must be at least 6 characters long")
-	ErrLongUserPassword  = errors.New("user password cannot be longer than 72 characters")
-	ErrUserAlreadyExists = errors.New("user with this email already exists")
+	ErrUserAlreadyExists  = errors.New("user with this email already exists")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrInvalidCredentials = errors.New("invalid email or password")
 )
 
 const (
