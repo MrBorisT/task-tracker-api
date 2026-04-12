@@ -10,3 +10,7 @@ type User struct {
 	Email        string `json:"email,omitempty"`
 	PasswordHash string `json:"-"`
 }
+
+type JWTToken struct {
+	Token string `json:"token,omitempty"`
+}

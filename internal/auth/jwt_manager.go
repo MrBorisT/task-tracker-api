@@ -1,0 +1,43 @@
+package auth
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/MrBorisT/task-tracker-api/internal/config"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+type JWTManager struct {
+	secret string
+	ttl    time.Duration
+}
+
+func NewJWTManager(cfg *config.Config) *JWTManager {
+	return &JWTManager{
+		secret: cfg.JWTSecret,
+		ttl:    cfg.JWTTTL,
+	}
+}
+
+func (jm *JWTManager) GenerateJWT(userID string) (string, error) {
+	now := time.Now()
+
+	claims := Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(jm.ttl)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signed, err := token.SignedString([]byte(jm.secret))
+	if err != nil {
+		return "", fmt.Errorf("sign jwt: %w", err)
+	}
+
+	return signed, nil
+}

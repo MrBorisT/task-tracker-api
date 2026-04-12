@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/MrBorisT/task-tracker-api/internal/config"
 	"github.com/MrBorisT/task-tracker-api/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -14,11 +16,13 @@ import (
 )
 
 type UserStore struct {
-	Pool *pgxpool.Pool
+	Pool      *pgxpool.Pool
+	JWTSecret string
+	JWTTTL    time.Duration
 }
 
-func NewUserStore(pool *pgxpool.Pool) *UserStore {
-	return &UserStore{Pool: pool}
+func NewUserStore(pool *pgxpool.Pool, cfg *config.Config) *UserStore {
+	return &UserStore{Pool: pool, JWTSecret: cfg.JWTSecret, JWTTTL: cfg.JWTTTL}
 }
 
 func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.UserRequest) error {

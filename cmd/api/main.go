@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/MrBorisT/task-tracker-api/internal/auth"
 	"github.com/MrBorisT/task-tracker-api/internal/config"
 	"github.com/MrBorisT/task-tracker-api/internal/handlers"
 	"github.com/MrBorisT/task-tracker-api/internal/storage"
@@ -32,7 +33,8 @@ func main() {
 	r := chi.NewRouter()
 
 	taskStore := storage.NewTaskStore(pool)
-	userStore := storage.NewUserStore(pool)
+	userStore := storage.NewUserStore(pool, config)
+	authManager := auth.NewJWTManager(config)
 
 	r.Get("/health", handlers.HealthHandler())
 	r.Route("/tasks", func(r chi.Router) {
@@ -44,7 +46,7 @@ func main() {
 	})
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", handlers.RegisterUserHandler(userStore))
-		r.Post("/login", handlers.LoginUserHandler(userStore))
+		r.Post("/login", handlers.LoginUserHandler(userStore, authManager))
 	})
 
 	log.Println("started server on port", config.Port)

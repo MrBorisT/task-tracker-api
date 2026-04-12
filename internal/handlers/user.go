@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"net/mail"
 	"strings"
 
+	"github.com/MrBorisT/task-tracker-api/internal/auth"
 	"github.com/MrBorisT/task-tracker-api/internal/models"
 	"github.com/MrBorisT/task-tracker-api/internal/storage"
 )
@@ -38,7 +39,7 @@ func RegisterUserHandler(userStore *storage.UserStore) http.HandlerFunc {
 				_ = writeJSONError(w, http.StatusConflict, "user with this email already exists")
 			default:
 				log.Println("registering user:", err)
-				_ = writeJSONError(w, http.StatusInternalServerError, "error registering user")
+				_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			}
 			return
 		}
@@ -46,7 +47,7 @@ func RegisterUserHandler(userStore *storage.UserStore) http.HandlerFunc {
 	}
 }
 
-func LoginUserHandler(userStore *storage.UserStore) http.HandlerFunc {
+func LoginUserHandler(userStore *storage.UserStore, authManager *auth.JWTManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userRequest := models.UserRequest{}
 
@@ -68,19 +69,30 @@ func LoginUserHandler(userStore *storage.UserStore) http.HandlerFunc {
 
 		userID, err := userStore.GetUserID(r.Context(), userRequest)
 		if err != nil {
-			switch err {
-			case storage.ErrUserNotFound:
+			switch {
+			case errors.Is(err, storage.ErrUserNotFound):
 				_ = writeJSONError(w, http.StatusNotFound, "user not found")
-			case storage.ErrInvalidCredentials:
+			case errors.Is(err, storage.ErrInvalidCredentials):
 				_ = writeJSONError(w, http.StatusUnauthorized, "invalid email or password")
 			default:
 				log.Println("logging in user:", err)
-				_ = writeJSONError(w, http.StatusInternalServerError, "error logging in user")
+				_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			}
 			return
 		}
-		//todo generate jwt and return it!
-		fmt.Println(userID)
+		token, err := authManager.GenerateJWT(userID)
+		if err != nil {
+			log.Println("generate jwt:", err)
+			_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if err = json.NewEncoder(w).Encode(models.JWTToken{Token: token}); err != nil {
+			log.Println("encoding jwt:", err)
+			_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
+			return
+		}
 	}
 }
 
