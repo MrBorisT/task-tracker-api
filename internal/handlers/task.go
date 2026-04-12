@@ -53,8 +53,8 @@ func newGetTasksQuery(statusStr, limitStr string) (*models.GetTasksQuery, error)
 	if err != nil {
 		return nil, errors.New("invalid limit: " + limitStr)
 	}
-	if limit < 0 {
-		return nil, errors.New("limit cannot be negative: " + limitStr)
+	if limit <= 0 {
+		return nil, errors.New("limit cannot be negative or zero: " + limitStr)
 	}
 	query := &models.GetTasksQuery{
 		Status: string(status),

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/MrBorisT/task-tracker-api/internal/config"
 	"github.com/MrBorisT/task-tracker-api/internal/models"
@@ -16,13 +15,11 @@ import (
 )
 
 type UserStore struct {
-	Pool      *pgxpool.Pool
-	JWTSecret string
-	JWTTTL    time.Duration
+	Pool *pgxpool.Pool
 }
 
 func NewUserStore(pool *pgxpool.Pool, cfg *config.Config) *UserStore {
-	return &UserStore{Pool: pool, JWTSecret: cfg.JWTSecret, JWTTTL: cfg.JWTTTL}
+	return &UserStore{Pool: pool}
 }
 
 func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.UserRequest) error {
@@ -49,11 +46,7 @@ func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.UserReq
 }
 
 func (s *UserStore) GetUserID(ctx context.Context, userRequest models.UserRequest) (string, error) {
-	hashedPassword, err := s.hashPassword(userRequest.Password)
-	if err != nil {
-		return "", err
-	}
-
+	hashedPassword := ""
 	query := "SELECT id, password_hash FROM users WHERE email = $1"
 	row := s.Pool.QueryRow(ctx, query, userRequest.Email)
 

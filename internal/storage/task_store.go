@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/MrBorisT/task-tracker-api/internal/models"
@@ -22,13 +21,19 @@ func NewTaskStore(pool *pgxpool.Pool) *TaskStore {
 
 func (s *TaskStore) ListTasks(ctx context.Context, gtq models.GetTasksQuery) ([]models.Task, error) {
 	query := "SELECT id, name, status FROM tasks"
+	args := []any{}
+	argID := 1
+
 	if gtq.Status != "" {
-		query += " WHERE status = '" + gtq.Status + "'"
+		query += fmt.Sprintf(" WHERE status = $%d", argID)
+		args = append(args, gtq.Status)
+		argID++
 	}
-	if gtq.Limit > 0 {
-		query += " LIMIT " + strconv.Itoa(gtq.Limit)
-	}
-	rows, err := s.Pool.Query(ctx, query)
+
+	query += fmt.Sprintf(" LIMIT $%d", argID)
+	args = append(args, gtq.Limit)
+
+	rows, err := s.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
