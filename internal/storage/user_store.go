@@ -43,8 +43,9 @@ func (s *UserStore) RegisterUser(ctx context.Context, userRequest models.UserReq
 		if errors.As(err, &pgErr) && pgErr.Code == PGCodeUniqueViolation {
 			return ErrUserAlreadyExists
 		}
+		return fmt.Errorf("create user: %w", err)
 	}
-	return fmt.Errorf("create user: %w", err)
+	return nil
 }
 
 func (s *UserStore) GetUserID(ctx context.Context, userRequest models.UserRequest) (string, error) {
