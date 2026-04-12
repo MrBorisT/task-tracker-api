@@ -29,7 +29,7 @@ func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 		tasks, err := taskStore.ListTasks(r.Context(), *query)
 		if err != nil {
 			log.Println("listing tasks:", err)
-			_ = writeJSONError(w, http.StatusInternalServerError, "error listing tasks")
+			_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
 
@@ -79,7 +79,7 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 				return
 			}
 			log.Println("getting task:", err)
-			_ = writeJSONError(w, http.StatusInternalServerError, "error getting task")
+			_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		} else if task != nil {
 			if err := encoder.Encode(task); err != nil {
@@ -111,7 +111,7 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 				return
 			}
 			log.Println("creating task:", err)
-			_ = writeJSONError(w, http.StatusInternalServerError, "error creating task")
+			_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
 
@@ -138,7 +138,7 @@ func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 				return
 			default:
 				log.Println("deleting task:", err)
-				_ = writeJSONError(w, http.StatusInternalServerError, "error deleting task")
+				_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 				return
 			}
 		} else {
@@ -178,13 +178,13 @@ func UpdateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 				return
 			default:
 				log.Println("updating task:", err)
-				_ = writeJSONError(w, http.StatusInternalServerError, "error updating task")
+				_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 				return
 			}
 		} else if newTask != nil {
 			if err := encoder.Encode(newTask); err != nil {
 				log.Println("encoding updated task:", err)
-				_ = writeJSONError(w, http.StatusInternalServerError, "error updating task")
+				_ = writeJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			}
 			return
 		}
