@@ -41,3 +41,23 @@ func (jm *JWTManager) GenerateJWT(userID string) (string, error) {
 
 	return signed, nil
 }
+
+func (m *JWTManager) Verify(tokenString string) (*Claims, error) {
+	claims := &Claims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		func(_ *jwt.Token) (any, error) {
+			return []byte(m.secret), nil
+		},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("parse token: %w", err)
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return claims, nil
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/MrBorisT/task-tracker-api/internal/auth"
 	"github.com/MrBorisT/task-tracker-api/internal/config"
 	"github.com/MrBorisT/task-tracker-api/internal/handlers"
+	"github.com/MrBorisT/task-tracker-api/internal/middleware"
 	"github.com/MrBorisT/task-tracker-api/internal/storage"
 )
 
@@ -38,6 +39,7 @@ func main() {
 
 	r.Get("/health", handlers.HealthHandler())
 	r.Route("/tasks", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(authManager))
 		r.Get("/", handlers.GetTasksHandler(taskStore))
 		r.Get("/{taskID}", handlers.GetTaskHandler(taskStore))
 		r.Delete("/{taskID}", handlers.DeleteTaskHandler(taskStore))
