@@ -88,7 +88,6 @@ func LoginUserHandler(userStore *storage.UserStore, authManager *auth.JWTManager
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		if err = json.NewEncoder(w).Encode(models.JWTToken{Token: token}); err != nil {
 			log.Println("encoding jwt:", err)
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
