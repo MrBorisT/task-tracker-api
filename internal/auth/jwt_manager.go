@@ -24,7 +24,6 @@ func (jm *JWTManager) GenerateJWT(userID string) (string, error) {
 	now := time.Now()
 
 	claims := Claims{
-		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID,
 			IssuedAt:  jwt.NewNumericDate(now),
