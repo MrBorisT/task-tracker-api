@@ -87,7 +87,7 @@ func (s *TaskStore) CreateTask(ctx context.Context, userID string, task models.C
 		UserID: userID,
 	}
 
-	query := "INSERT INTO tasks (id, name, status, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, status"
+	query := "INSERT INTO tasks (id, name, status, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, status, user_id"
 	row := s.Pool.QueryRow(ctx, query, newTask.ID, newTask.Name, newTask.Status, userID)
 
 	if err := row.Scan(&newTask.ID, &newTask.Name, &newTask.Status, &newTask.UserID); err != nil {
