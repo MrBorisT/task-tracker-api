@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/MrBorisT/task-tracker-api/internal/helper"
+	"github.com/MrBorisT/task-tracker-api/internal/middleware"
 	"github.com/MrBorisT/task-tracker-api/internal/models"
 	"github.com/MrBorisT/task-tracker-api/internal/storage"
 )
@@ -93,6 +94,14 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, ok := middleware.GetUserID(ctx)
+		if !ok {
+			log.Println("user ID not found in context")
+			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
+			return
+		}
+
 		taskRequest := models.CreateTaskRequest{}
 
 		decoder := json.NewDecoder(r.Body)
@@ -105,7 +114,7 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			return
 		}
 
-		newTask, err := taskStore.CreateTask(r.Context(), taskRequest)
+		newTask, err := taskStore.CreateTask(ctx, userID, taskRequest)
 		if err != nil {
 			if err == storage.ErrEmptyTaskName {
 				_ = helper.WriteJSONError(w, http.StatusBadRequest, "task name cannot be empty")

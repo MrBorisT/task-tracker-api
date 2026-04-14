@@ -74,7 +74,7 @@ func (s *TaskStore) GetTask(ctx context.Context, id string) (*models.Task, error
 	}
 }
 
-func (s *TaskStore) CreateTask(ctx context.Context, task models.CreateTaskRequest) (*models.Task, error) {
+func (s *TaskStore) CreateTask(ctx context.Context, userID string, task models.CreateTaskRequest) (*models.Task, error) {
 	trimmedName := strings.TrimSpace(task.Name)
 	if trimmedName == "" {
 		return nil, ErrEmptyTaskName
@@ -84,12 +84,13 @@ func (s *TaskStore) CreateTask(ctx context.Context, task models.CreateTaskReques
 		ID:     s.generateID(),
 		Name:   trimmedName,
 		Status: models.StatusNew,
+		UserID: userID,
 	}
 
-	query := "INSERT INTO tasks (id, name, status) VALUES ($1, $2, $3) RETURNING id, name, status"
-	row := s.Pool.QueryRow(ctx, query, newTask.ID, newTask.Name, newTask.Status)
+	query := "INSERT INTO tasks (id, name, status, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, status"
+	row := s.Pool.QueryRow(ctx, query, newTask.ID, newTask.Name, newTask.Status, userID)
 
-	if err := row.Scan(&newTask.ID, &newTask.Name, &newTask.Status); err != nil {
+	if err := row.Scan(&newTask.ID, &newTask.Name, &newTask.Status, &newTask.UserID); err != nil {
 		return nil, fmt.Errorf("error creating task: %w", err)
 	} else {
 		return &newTask, nil
