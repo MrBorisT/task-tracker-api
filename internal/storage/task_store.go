@@ -75,13 +75,14 @@ func (s *TaskStore) GetTask(ctx context.Context, id string) (*models.Task, error
 }
 
 func (s *TaskStore) CreateTask(ctx context.Context, task models.CreateTaskRequest) (*models.Task, error) {
-	if strings.TrimSpace(task.Name) == "" {
+	trimmedName := strings.TrimSpace(task.Name)
+	if trimmedName == "" {
 		return nil, ErrEmptyTaskName
 	}
 
 	newTask := models.Task{
 		ID:     s.generateID(),
-		Name:   task.Name,
+		Name:   trimmedName,
 		Status: models.StatusNew,
 	}
 
