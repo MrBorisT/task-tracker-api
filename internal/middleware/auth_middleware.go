@@ -53,3 +53,8 @@ func AuthMiddleware(jwtManager *auth.JWTManager) func(http.Handler) http.Handler
 		})
 	}
 }
+
+func GetUserID(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(UserIDKey).(string)
+	return userID, ok
+}
