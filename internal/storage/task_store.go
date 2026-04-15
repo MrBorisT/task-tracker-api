@@ -101,13 +101,13 @@ func (s *TaskStore) CreateTask(ctx context.Context, userID string, task models.C
 	}
 }
 
-func (s *TaskStore) DeleteTask(ctx context.Context, id string) error {
+func (s *TaskStore) DeleteTask(ctx context.Context, userID string, id string) error {
 	if !s.validateTaskID(id) {
 		return ErrInvalidTaskID
 	}
 
-	query := "DELETE FROM tasks WHERE id = $1"
-	commandTag, err := s.Pool.Exec(ctx, query, id)
+	query := "DELETE FROM tasks WHERE user_id = $1 AND id = $2"
+	commandTag, err := s.Pool.Exec(ctx, query, userID, id)
 	if err != nil {
 		return fmt.Errorf("error deleting task: %w", err)
 	}

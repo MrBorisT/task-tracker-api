@@ -149,9 +149,16 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := getUserIDFromContext(r.Context())
+		if err != nil {
+			log.Println("getting user ID from context:", err)
+			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
+			return
+		}
+
 		taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
 
-		if err := taskStore.DeleteTask(r.Context(), taskID); err != nil {
+		if err := taskStore.DeleteTask(r.Context(), userID, taskID); err != nil {
 			switch {
 			case errors.Is(err, storage.ErrInvalidTaskID):
 				_ = helper.WriteJSONError(w, http.StatusBadRequest, "invalid task ID")
