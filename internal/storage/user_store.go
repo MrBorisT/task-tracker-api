@@ -52,7 +52,7 @@ func (s *UserStore) GetUserID(ctx context.Context, userRequest models.UserReques
 	var userID string
 	if err := row.Scan(&userID, &hashedPassword); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrUserNotFound
+			return "", ErrInvalidCredentials
 		}
 		return "", fmt.Errorf("querying user: %w", err)
 	}

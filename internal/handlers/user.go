@@ -71,8 +71,6 @@ func LoginUserHandler(userStore *storage.UserStore, authManager *auth.JWTManager
 		userID, err := userStore.GetUserID(r.Context(), userRequest)
 		if err != nil {
 			switch {
-			case errors.Is(err, storage.ErrUserNotFound):
-				_ = helper.WriteJSONError(w, http.StatusNotFound, "user not found")
 			case errors.Is(err, storage.ErrInvalidCredentials):
 				_ = helper.WriteJSONError(w, http.StatusUnauthorized, "invalid email or password")
 			default:
