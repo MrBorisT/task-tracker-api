@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -19,9 +18,9 @@ import (
 
 func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := getUserIDFromContext(r.Context())
-		if err != nil {
-			log.Println("getting user ID from context:", err)
+		userID, ok := middleware.GetUserID(r.Context())
+		if !ok {
+			log.Println("getting user ID from context: user ID not found")
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
@@ -75,12 +74,13 @@ func newGetTasksQuery(statusStr, limitStr string) (*models.GetTasksQuery, error)
 
 func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := getUserIDFromContext(r.Context())
-		if err != nil {
-			log.Println("getting user ID from context:", err)
+		userID, ok := middleware.GetUserID(r.Context())
+		if !ok {
+			log.Println("getting user ID from context: user ID not found")
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
+
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		encoder := json.NewEncoder(w)
 
@@ -108,9 +108,9 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := getUserIDFromContext(r.Context())
-		if err != nil {
-			log.Println("getting user ID from context:", err)
+		userID, ok := middleware.GetUserID(r.Context())
+		if !ok {
+			log.Println("getting user ID from context: user ID not found")
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
@@ -149,9 +149,9 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := getUserIDFromContext(r.Context())
-		if err != nil {
-			log.Println("getting user ID from context:", err)
+		userID, ok := middleware.GetUserID(r.Context())
+		if !ok {
+			log.Println("getting user ID from context: user ID not found")
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
@@ -179,9 +179,9 @@ func DeleteTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 func UpdateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := getUserIDFromContext(r.Context())
-		if err != nil {
-			log.Println("getting user ID from context:", err)
+		userID, ok := middleware.GetUserID(r.Context())
+		if !ok {
+			log.Println("getting user ID from context: user ID not found")
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
@@ -226,12 +226,4 @@ func UpdateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			return
 		}
 	}
-}
-
-func getUserIDFromContext(ctx context.Context) (string, error) {
-	userID, ok := middleware.GetUserID(ctx)
-	if !ok {
-		return "", errors.New("user ID not found in context")
-	}
-	return userID, nil
 }
