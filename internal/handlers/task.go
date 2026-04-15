@@ -75,11 +75,17 @@ func newGetTasksQuery(statusStr, limitStr string) (*models.GetTasksQuery, error)
 
 func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := getUserIDFromContext(r.Context())
+		if err != nil {
+			log.Println("getting user ID from context:", err)
+			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
+			return
+		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		encoder := json.NewEncoder(w)
 
 		taskID := strings.TrimSpace(chi.URLParam(r, "taskID"))
-		if task, err := taskStore.GetTask(r.Context(), taskID); err != nil {
+		if task, err := taskStore.GetTask(r.Context(), userID, taskID); err != nil {
 			switch {
 			case errors.Is(err, storage.ErrInvalidTaskID):
 				_ = helper.WriteJSONError(w, http.StatusBadRequest, "invalid task ID")

@@ -60,14 +60,14 @@ func (s *TaskStore) ListTasks(ctx context.Context, userID string, gtq models.Get
 	return resultTasks, nil
 }
 
-func (s *TaskStore) GetTask(ctx context.Context, id string) (*models.Task, error) {
+func (s *TaskStore) GetTask(ctx context.Context, userID string, id string) (*models.Task, error) {
 	if !s.validateTaskID(id) {
 		return nil, ErrInvalidTaskID
 	}
 	resultTask := models.Task{}
 
-	query := "SELECT id, name, status FROM tasks WHERE id = $1"
-	if err := s.Pool.QueryRow(ctx, query, id).Scan(&resultTask.ID, &resultTask.Name, &resultTask.Status); err != nil {
+	query := "SELECT id, name, status FROM tasks WHERE user_id = $1 AND id = $2"
+	if err := s.Pool.QueryRow(ctx, query, userID, id).Scan(&resultTask.ID, &resultTask.Name, &resultTask.Status); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrTaskNotFound
 		} else {
