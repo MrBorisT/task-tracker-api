@@ -34,7 +34,7 @@ func main() {
 	r := chi.NewRouter()
 
 	taskStore := storage.NewTaskStore(pool)
-	userStore := storage.NewUserStore(pool, config)
+	userStore := storage.NewUserStore(pool)
 	authManager := auth.NewJWTManager(config)
 
 	r.Get("/health", handlers.HealthHandler())

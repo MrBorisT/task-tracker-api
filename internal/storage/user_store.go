@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MrBorisT/task-tracker-api/internal/config"
 	"github.com/MrBorisT/task-tracker-api/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -18,7 +17,7 @@ type UserStore struct {
 	Pool *pgxpool.Pool
 }
 
-func NewUserStore(pool *pgxpool.Pool, cfg *config.Config) *UserStore {
+func NewUserStore(pool *pgxpool.Pool) *UserStore {
 	return &UserStore{Pool: pool}
 }
 
