@@ -117,7 +117,7 @@ func (s *TaskStore) DeleteTask(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *TaskStore) UpdateTask(ctx context.Context, task models.UpdateTaskRequest) (*models.Task, error) {
+func (s *TaskStore) UpdateTask(ctx context.Context, userID string, task models.UpdateTaskRequest) (*models.Task, error) {
 	if !s.validateTaskID(task.ID) {
 		return nil, ErrInvalidTaskID
 	}
@@ -135,10 +135,10 @@ func (s *TaskStore) UpdateTask(ctx context.Context, task models.UpdateTaskReques
 		}
 	}
 
-	query := "UPDATE tasks SET name = COALESCE($1, name), status = COALESCE($2, status) WHERE id = $3 RETURNING id, name, status"
+	query := "UPDATE tasks SET name = COALESCE($1, name), status = COALESCE($2, status) WHERE user_id = $3 AND id = $4 RETURNING id, name, status"
 
 	updatedTask := models.Task{ID: task.ID}
-	row := s.Pool.QueryRow(ctx, query, task.Name, task.Status, task.ID)
+	row := s.Pool.QueryRow(ctx, query, task.Name, task.Status, userID, task.ID)
 	if err := row.Scan(&updatedTask.ID, &updatedTask.Name, &updatedTask.Status); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrTaskNotFound
