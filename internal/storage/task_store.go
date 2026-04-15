@@ -19,13 +19,17 @@ func NewTaskStore(pool *pgxpool.Pool) *TaskStore {
 	return &TaskStore{Pool: pool}
 }
 
-func (s *TaskStore) ListTasks(ctx context.Context, gtq models.GetTasksQuery) ([]models.Task, error) {
+func (s *TaskStore) ListTasks(ctx context.Context, userID string, gtq models.GetTasksQuery) ([]models.Task, error) {
 	query := "SELECT id, name, status FROM tasks"
 	args := []any{}
 	argID := 1
 
+	query += fmt.Sprintf(" WHERE user_id = $%d", argID)
+	args = append(args, userID)
+	argID++
+
 	if gtq.Status != "" {
-		query += fmt.Sprintf(" WHERE status = $%d", argID)
+		query += fmt.Sprintf(" AND status = $%d", argID)
 		args = append(args, gtq.Status)
 		argID++
 	}

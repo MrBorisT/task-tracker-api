@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -18,6 +19,13 @@ import (
 
 func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := getUserIDFromContext(r.Context())
+		if err != nil {
+			log.Println("getting user ID from context:", err)
+			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		encoder := json.NewEncoder(w)
 
@@ -28,7 +36,7 @@ func GetTasksHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			return
 		}
 
-		tasks, err := taskStore.ListTasks(r.Context(), *query)
+		tasks, err := taskStore.ListTasks(r.Context(), userID, *query)
 		if err != nil {
 			log.Println("listing tasks:", err)
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
@@ -94,10 +102,9 @@ func GetTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 
 func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		userID, ok := middleware.GetUserID(ctx)
-		if !ok {
-			log.Println("user ID not found in context")
+		userID, err := getUserIDFromContext(r.Context())
+		if err != nil {
+			log.Println("getting user ID from context:", err)
 			_ = helper.WriteJSONError(w, http.StatusInternalServerError, "something went wrong, try again later")
 			return
 		}
@@ -114,7 +121,7 @@ func CreateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			return
 		}
 
-		newTask, err := taskStore.CreateTask(ctx, userID, taskRequest)
+		newTask, err := taskStore.CreateTask(r.Context(), userID, taskRequest)
 		if err != nil {
 			if err == storage.ErrEmptyTaskName {
 				_ = helper.WriteJSONError(w, http.StatusBadRequest, "task name cannot be empty")
@@ -199,4 +206,12 @@ func UpdateTaskHandler(taskStore *storage.TaskStore) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func getUserIDFromContext(ctx context.Context) (string, error) {
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return "", errors.New("user ID not found in context")
+	}
+	return userID, nil
 }
