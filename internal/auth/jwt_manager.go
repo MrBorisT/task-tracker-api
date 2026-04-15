@@ -23,12 +23,10 @@ func NewJWTManager(cfg *config.Config) *JWTManager {
 func (jm *JWTManager) GenerateJWT(userID string) (string, error) {
 	now := time.Now()
 
-	claims := Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   userID,
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(jm.ttl)),
-		},
+	claims := jwt.RegisteredClaims{
+		Subject:   userID,
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(jm.ttl)),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -41,8 +39,8 @@ func (jm *JWTManager) GenerateJWT(userID string) (string, error) {
 	return signed, nil
 }
 
-func (m *JWTManager) Verify(tokenString string) (*Claims, error) {
-	claims := &Claims{}
+func (m *JWTManager) Verify(tokenString string) (*jwt.RegisteredClaims, error) {
+	claims := &jwt.RegisteredClaims{}
 
 	token, err := jwt.ParseWithClaims(
 		tokenString,
