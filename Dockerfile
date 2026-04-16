@@ -10,7 +10,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/api/main.go
 
 # --- runtime stage ---
-FROM alpine:latest
+FROM alpine:3.20
 
 WORKDIR /app
 
