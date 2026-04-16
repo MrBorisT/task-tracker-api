@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,9 +19,15 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file")
+	env := os.Getenv("APP_ENV")
+
+	switch env {
+	case "production":
+		// nothing to load
+	default:
+		_ = godotenv.Load()
 	}
+
 	config, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalln("Error loading configuration:", err)
