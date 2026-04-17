@@ -242,6 +242,64 @@ migrations           SQL migrations
 
 ---
 
+## Error Response Format
+
+All errors are returned in JSON format:
+
+```json
+{
+  "error": "message"
+}
+```
+
+Examples:
+
+- `400 Bad Request`
+- `401 Unauthorized`
+- `404 Not Found`
+- `409 Conflict`
+- `500 Internal Server Error`
+
+---
+
+## Common Status Codes
+
+- `200 OK` — successful request
+- `201 Created` — resource created
+- `204 No Content` — resource deleted
+- `400 Bad Request` — invalid input
+- `401 Unauthorized` — missing or invalid token
+- `404 Not Found` — resource not found
+- `409 Conflict` — duplicate user email
+- `500 Internal Server Error` — unexpected server error
+
+---
+
+## Example .env (Local Development)
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=tasktracker
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_SSLMODE=disable
+APP_PORT=8080
+APP_ENV=development
+JWT_SECRET=supersecretkey
+JWT_TTL=24h
+```
+
+---
+
+## Security / Ownership Rules
+
+Authenticated users can access **only their own tasks**.
+
+Every `/tasks` query is scoped by `user_id`, so one user cannot read, update or delete another user's tasks.
+
+---
+
 ## Notes
 
 This project is focused on backend fundamentals:
