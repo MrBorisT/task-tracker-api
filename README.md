@@ -144,6 +144,8 @@ All `/tasks` endpoints require:
 Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
+Each user can access **only their own tasks**.
+
 ---
 
 ## Get Tasks
@@ -289,6 +291,12 @@ APP_ENV=development
 JWT_SECRET=supersecretkey
 JWT_TTL=24h
 ```
+
+---
+
+## Configuration
+
+See `.env.example` for required environment variables.
 
 ---
 
