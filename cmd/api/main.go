@@ -38,25 +38,12 @@ func main() {
 	}
 
 	defer pool.Close()
-	r := chi.NewRouter()
 
 	taskStore := storage.NewTaskStore(pool)
 	userStore := storage.NewUserStore(pool)
 	authManager := auth.NewJWTManager(config)
 
-	r.Get("/health", handlers.HealthHandler())
-	r.Route("/tasks", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(authManager))
-		r.Get("/", handlers.GetTasksHandler(taskStore))
-		r.Get("/{taskID}", handlers.GetTaskHandler(taskStore))
-		r.Delete("/{taskID}", handlers.DeleteTaskHandler(taskStore))
-		r.Post("/", handlers.CreateTaskHandler(taskStore))
-		r.Put("/{taskID}", handlers.UpdateTaskHandler(taskStore))
-	})
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", handlers.RegisterUserHandler(userStore))
-		r.Post("/login", handlers.LoginUserHandler(userStore, authManager))
-	})
+	r := newRouter(authManager, taskStore, userStore)
 
 	log.Println("started server on port", config.Port)
 	err = http.ListenAndServe(config.Port, r)
@@ -87,4 +74,24 @@ func newPool(config *config.Config) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	return pool, nil
+}
+
+func newRouter(authManager *auth.JWTManager, taskStore *storage.TaskStore, userStore *storage.UserStore) http.Handler {
+	r := chi.NewRouter()
+
+	r.Get("/health", handlers.HealthHandler())
+	r.Route("/tasks", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(authManager))
+		r.Get("/", handlers.GetTasksHandler(taskStore))
+		r.Get("/{taskID}", handlers.GetTaskHandler(taskStore))
+		r.Delete("/{taskID}", handlers.DeleteTaskHandler(taskStore))
+		r.Post("/", handlers.CreateTaskHandler(taskStore))
+		r.Put("/{taskID}", handlers.UpdateTaskHandler(taskStore))
+	})
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", handlers.RegisterUserHandler(userStore))
+		r.Post("/login", handlers.LoginUserHandler(userStore, authManager))
+	})
+
+	return r
 }
