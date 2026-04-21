@@ -150,10 +150,7 @@ func (s *TaskStore) UpdateTask(ctx context.Context, userID string, task models.U
 
 func (s *TaskStore) validateTaskID(taskID string) bool {
 	_, err := uuid.Parse(taskID)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (s *TaskStore) generateID() string {
