@@ -308,6 +308,15 @@ Every `/tasks` query is scoped by `user_id`, so one user cannot read, update or 
 
 ---
 
+## CI
+
+This project uses GitHub Actions to run:
+
+- `go test ./...`
+- `golangci-lint`
+
+on every push to `main` and on pull requests.
+
 ## Notes
 
 This project is focused on backend fundamentals:
